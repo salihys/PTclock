@@ -1,7 +1,7 @@
 {
   "board": "s3_4848",
-  "version": "1.3.6",
-  "url": "https://github.com/salihys/PTclock/releases/download/s3_4848-v1.3.6/firmware-s3_4848-1.3.6.bin",
-  "sha256": "ca61328799a7503c37d01989ab8711daf4d1c59aa2a32de08cf128e1145aea9d",
-  "notes": "1.3.6: DS3231 on the touch bus or on GPIO 44 / 43 (found at start-up)\n\nThe RTC is looked for on the touch I2C bus first (SDA 19 / SCL 45, as before),\nthen on its own I2C port with RTC_SDA_PIN / RTC_SCL_PIN from config.h (SDA 44 /\nSCL 43, the UART0 pins: the serial log is off while the RTC uses them and comes\nback if no DS3231 answers there). Debug console: baud command."
+  "version": "1.3.7",
+  "url": "https://github.com/salihys/PTclock/releases/download/s3_4848-v1.3.7/firmware-s3_4848-1.3.7.bin",
+  "sha256": "aa81f7f176848db6c3678fdd8a36bbe1d8a89c8e6b8f9aca4ca749827aee6953",
+  "notes": "1.3.7: lower maximum volume (slider 21 sounds like 17 did before)\n\nAUDIO_MAX_LEVEL in config.h (17; 21 = the old full volume). The library uses\n255 volume steps and every slider position is scaled the same way; sliders,\nweb page, settings and alarms stay 0..21. Less current at full volume: a board\non PC USB power restarted at 21."
 }
