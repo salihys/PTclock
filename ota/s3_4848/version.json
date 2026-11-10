@@ -1,7 +1,7 @@
 {
   "board": "s3_4848",
-  "version": "1.3.5",
-  "url": "https://github.com/salihys/PTclock/releases/download/s3_4848-v1.3.5/firmware-s3_4848-1.3.5.bin",
-  "sha256": "eda2a6698b58e816f1052b748ddf139296637a529b965e6b000174bd161664b7",
-  "notes": "Alarm sound browser"
+  "version": "1.3.6",
+  "url": "https://github.com/salihys/PTclock/releases/download/s3_4848-v1.3.6/firmware-s3_4848-1.3.6.bin",
+  "sha256": "ca61328799a7503c37d01989ab8711daf4d1c59aa2a32de08cf128e1145aea9d",
+  "notes": "1.3.6: DS3231 on the touch bus or on GPIO 44 / 43 (found at start-up)\n\nThe RTC is looked for on the touch I2C bus first (SDA 19 / SCL 45, as before),\nthen on its own I2C port with RTC_SDA_PIN / RTC_SCL_PIN from config.h (SDA 44 /\nSCL 43, the UART0 pins: the serial log is off while the RTC uses them and comes\nback if no DS3231 answers there). Debug console: baud command."
 }
