@@ -250,7 +250,7 @@ input:disabled{opacity:.5}
     onchange="if(this.checked)$('e_ram').checked=false;eShow()">
   </div>
   <div class="f hide" id="e_daterow"><span>Date</span><input id="e_date" type="date"></div>
-  <div class="f"><span>Sound (/alarms)</span><select id="e_snd"></select></div>
+  <div class="f"><span>Sound <small id="e_sdir"></small></span><select id="e_snd" onchange="sndPick()"></select></div>
   <div class="f">
    <span>Volume <b id="e_vl"></b></span>
    <input type="range" id="e_vol" min="0" max="21" oninput="eVol(this.value)">
@@ -258,6 +258,7 @@ input:disabled{opacity:.5}
   <div class="row">
    <button class="sm" onclick="eTest()">&#9654; Test</button>
    <button class="sm g" onclick="eStop()">&#9632; Stop</button>
+   <button class="sm g" onclick="loadSounds(undefined,sCwd)">&#8635; Refresh list</button>
   </div>
   <div class="row">
    <button onclick="eSave()">&#10004; Save</button>
@@ -498,6 +499,11 @@ input:disabled{opacity:.5}
   <div class="row" id="mrSearchRow">
    <input id="mrQ" style="flex:1" placeholder="Search YouTube" onkeydown="if(event.key=='Enter')mrSearch()">
    <button class="sm" onclick="mrSearch()">Search</button>
+   <button class="sm g" onclick="$('mrKeyRow').classList.toggle('hide')" title="YouTube key">&#128273;</button>
+  </div>
+  <div class="row hide" id="mrKeyRow">
+   <input id="mrKey" style="flex:1" placeholder="YouTube Data API v3 key (for search)" onkeydown="if(event.key=='Enter')mrSaveKey()">
+   <button class="sm" onclick="mrSaveKey()">Save key</button>
   </div>
   <div class="row">
    <input id="mrLink" style="flex:1" placeholder="Paste a YouTube link" onkeydown="if(event.key=='Enter')mrPlayLink()">
@@ -1705,7 +1711,9 @@ function mrLoad(){
   mrFill('mrFiles',f.length?f.map((x,i)=>mrItem(mrIcon(x)+x.title,()=>mr('file',{i:i})))
    :[mrItem('(nothing in PrayerClock/music and videos)')]);
   mrFill('mrYt',y.map((x,i)=>mrItem('▶ '+x.title,()=>mr('yt',{i:i}))));
+  // no key on the tablet: no search, the key box instead
   $('mrSearchRow').classList.toggle('hide',!d.ytkey);
+  $('mrKeyRow').classList.toggle('hide',!!d.ytkey);
   if(d.state)mrState(d.state);
  }).catch(()=>{});
 }
@@ -1733,6 +1741,16 @@ function mrSearch(){
   mrFill('mrRes',(d.list||[]).map(x=>mrItem((x.pl?'\u{1F4C3} ':'▶ ')+x.title+(x.ch?' - '+x.ch:'')+(x.dur?' ('+x.dur+')':''),
    ()=>{mr('ytplay',{id:x.id,title:x.title,pl:x.pl});setTimeout(mrLoad,2000)})));
  }).catch(()=>{$('mrRes').innerHTML=''});
+}
+// YouTube search key, saved on the tablet (empty = remove it)
+function mrSaveKey(){
+ if(!ready){msg('Unlock and connect first');return}
+ let k=$('mrKey').value.trim();
+ if(!k&&!confirm('Remove the YouTube key from the tablet?'))return;
+ mrApi({c:'ytkey',key:k}).then(()=>{
+  $('mrKey').value='';
+  mrLoad();
+ }).catch(()=>{});
 }
 function mrPlayLink(){
  let u=$('mrLink').value.trim();
@@ -1847,22 +1865,49 @@ function ePrev(){
   '  ('+PN[AZPT[mode]]+' is at '+hm(p)+')';
 }
 
-function loadSounds(want){
+// [SNDPICK] alarm sound: browse folders like the clock (folders + ".." in the
+// list, start in the folder of the current sound or /alarms). sSel = the file.
+let sCwd='/alarms',sSel='';
+function sPar(p){let i=p.lastIndexOf('/');return i<=0?'/':p.slice(0,i)}
+function loadSounds(want,dir){
+ if(want!==undefined){
+  sSel=want||'';
+  if(sSel&&sSel[0]!='/')sSel='/alarms/'+sSel;   // old saves: name only
+ }
+ sCwd=dir||(sSel?sPar(sSel):'/alarms');
  let s=$('e_snd');
  s.innerHTML='<option value="">Default (alarm.mp3)</option>';
- return api('/api/fs/list',{path:'/alarms'}).then(d=>{
-  (d.files||[]).filter(x=>AUD.test(x.n))
-   .sort((a,b)=>a.n.localeCompare(b.n))
-   .forEach(x=>s.add(new Option(x.n,J('/alarms',x.n))));
-  s.value=want||'';
-  if(s.selectedIndex<0&&want){
-   let b=bn(want).toLowerCase();
+ $('e_sdir').textContent='\u{1F4C1} '+sCwd;
+ return api('/api/fs/list',{path:sCwd}).then(d=>{
+  if(!d.ok){                                   // folder gone: /alarms, then /
+   if(sCwd!='/')return loadSounds(undefined,sCwd=='/alarms'?'/':'/alarms');
+   s.value='';return;
+  }
+  let cmp=(a,b)=>a.toLowerCase().localeCompare(b.toLowerCase());
+  if(sSel&&sPar(sSel)!=sCwd)
+   s.add(new Option('✓ '+bn(sSel)+'  ('+sPar(sSel)+')',sSel));
+  if(sCwd!='/')s.add(new Option('\u{1F4C1} .. (Parent folder)','D:'+sPar(sCwd)));
+  (d.dirs||[]).filter(n=>n[0]!='.'&&n!='System Volume Information')
+   .sort(cmp).forEach(n=>s.add(new Option('\u{1F4C1} '+n+'/','D:'+J(sCwd,n))));
+  (d.files||[]).map(x=>x.n).filter(n=>AUD.test(n)&&n[0]!='.')
+   .sort(cmp).forEach(n=>s.add(new Option('♪ '+n,J(sCwd,n))));
+  s.value=sSel;
+  if(s.selectedIndex<0&&sSel){
+   let b=sSel.toLowerCase();
    for(let o of s.options){
-    if(bn(o.value).toLowerCase()==b){s.value=o.value;break}
+    if(o.value.toLowerCase()==b){s.value=o.value;break}
    }
   }
   if(s.selectedIndex<0)s.value='';
  }).catch(()=>{});
+}
+function sndPick(){
+ let v=$('e_snd').value;
+ if(v.startsWith('D:'))loadSounds(undefined,v.slice(2));   // open the folder
+ else{
+  if(v.length>95){msg('This file\'s path is too long for an alarm');$('e_snd').value=sSel;return}
+  sSel=v;
+ }
 }
 
 function eOpen(i){
