@@ -3,5 +3,5 @@
   "version": "1.3.8",
   "url": "https://github.com/salihys/PTclock/releases/download/s3_4848-v1.3.8/firmware-s3_4848-1.3.8.bin",
   "sha256": "20871a51ac5dba0f01ee13f048a4474e96d342e9bb205f2325f3fbb10019dc3b",
-  "notes": "v1.3.8"
+  "notes": "Maximum volume back to 1.3.6 (undoes 1.3.7). Web page: YouTube key box for the tablet's media remote"
 }
